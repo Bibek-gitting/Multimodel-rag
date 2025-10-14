@@ -1,6 +1,6 @@
 # Node modules folder (don't commit dependencies)
 node_modules/
-
+models/
 # Logs
 logs
 *.log
@@ -29,3 +29,7 @@ jspm_packages/
 
 # Environment variables
 .env
+
+
+codesandbox/
+devcontainer/

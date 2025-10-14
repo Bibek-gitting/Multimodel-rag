@@ -1,25 +1,13 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  ChangeEvent,
-  KeyboardEvent,
-} from "react";
-import {
-  Mic,
-  Send,
-  FileText,
-  Image as ImageIcon,
-  AudioWaveform,
-  Plus,
-} from "lucide-react";
+import React, { useState, useEffect, useRef, ChangeEvent, KeyboardEvent} from "react";
+import { Mic, Send, FileText, Image as ImageIcon, AudioWaveform, Plus } from "lucide-react";
+import { ReactNode } from "react";
 
 type MessageType = "user" | "bot";
 
 interface Message {
   id: string;
   type: MessageType;
-  content: string;
+  content: string | ReactNode;
 }
 
 interface Chat {
@@ -27,6 +15,17 @@ interface Chat {
   title: string;
   messages: Message[];
 }
+interface Citation {
+  id: string | number;
+  type?: string;
+  source?: string;
+  page?: number;
+}
+
+// interface MessageProps {
+//   answer: string;
+//   citations?: Citation[];
+// }
 
 export default function App() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -34,6 +33,8 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const basePath = "./backend/uploaded_media_files/";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -79,47 +80,128 @@ export default function App() {
     setInput("");
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("http://localhost:8000/ask",{
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({question: newUserMessage.content}),
+      });
+      const data = await res.json();
+
+      // const citationsHtml = data.citations?.map((cite: Citation) => {
+      //   const filename = cite.source?.split(/[\\/]/).pop();
+      //   const fullPath = filename ? `${basePath}${filename}` : "#";
+      //   return `<a href="${fullPath}" target="_blank" rel="noopener noreferrer">
+      //     ${cite.id}${cite.type ? ` (${cite.type})` : ''}${cite.page ? `, page ${cite.page}` : ''}
+      //   </a>`;
+      // }).join("; ");
+
+      // {data.citations?.map((cite: Citation, index: number) => {
+      //   const filename = cite.source?.split(/[\\/]/).pop();
+      //   const fullPath = filename ? `${basePath}${filename}` : "#";
+      //   return (
+      //     <span key={index}>
+      //       <a href={fullPath} target="_blank" rel="noopener noreferrer">
+      //         {cite.id}{cite.type ? ` (${cite.type})` : ''}{cite.page ? `, page ${cite.page}` : ''}
+      //       </a>
+      //       {index < data.citations.length - 1 && "; "}
+      //     </span>
+      //   );
+      // })}
       const botReply: Message = {
         id: crypto.randomUUID(),
         type: "bot",
-        content: `You asked: "${newUserMessage.content}". This is a mock reply from the assistant.`,
+        content: (
+          <>
+            <p>{data.answer}</p>
+            <p>
+              <strong>Citations:</strong>{" "}
+              {data.citations?.map((cite: Citation, index: number) => {
+                const filename = cite.source?.split(/[\\/]/).pop();
+                const fullPath = filename ? `${basePath}${filename}` : "#";
+                return (
+                  <span key={index}>
+                    <a href={fullPath} target="_blank" rel="noopener noreferrer" className ="underline">
+                      {cite.id}
+                      {cite.type ? ` (${cite.type})` : ""}
+                      {cite.page ? `, page ${cite.page}` : ""}
+                    </a>
+                    {index < data.citations.length - 1 && "; "}
+                  </span>
+                );
+              })}
+            </p>
+          </>
+        )
       };
+      
 
+      // const botReply: Message = {
+      //   id: crypto.randomUUID(),
+      //   type: "bot",
+      //   content: `${data.answer}\n\nCitations: ${citationsHtml}`
+
+      // };
+      
+      setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === activeChatId
+          ? {
+              ...chat,
+              messages: [...chat.messages, botReply],
+            }
+          : chat
+        )
+      );
+    } catch (err) {
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        type: "bot",
+        content: "Error: Unable to get response from the assistant.",
+      };
       setChats((prev) =>
         prev.map((chat) =>
           chat.id === activeChatId
-            ? { ...chat, messages: [...chat.messages, botReply] }
+            ? { ...chat, messages: [...chat.messages, errorMessage] }
             : chat,
         ),
       );
+      console.error("API error:", err);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") sendMessage();
   };
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
 
-    const formData = new FormData();
-    formData.append("file", files[0]);
+    const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-    try {
-      const res = await fetch("http://localhost:8000/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const file = files[0];
+      setFileName(file.name);  // Save the file name to state
 
-      const data = await res.json();
-      console.log("Server response:", data);
-    } catch (err) {
-      console.error("Upload failed:", err);
-    }
-  };
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("http://localhost:8000/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        console.log("Server response:", data);
+      } catch (err) {
+        console.error("Upload failed:", err);
+      }
+    };
 
   return (
     <div className="flex flex-col h-screen">
@@ -176,25 +258,25 @@ export default function App() {
                 className="hidden"
                 onChange={handleFileUpload}
               />
-              <span className="text-sm text-yellow-300 font-medium">Docs</span>
+              <span className="text-sm text-yellow-300 font-medium">{fileName ? fileName : "Docs"}</span>
             </label>
             <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 transition-colors">
               <ImageIcon className="w-5 h-5 text-yellow-300" />
               <input
                 type="file"
-                accept="image/*"
+                accept=".jpg,.png"
                 className="hidden"
                 onChange={handleFileUpload}
               />
               <span className=" text-sm text-yellow-300 font-medium">
-                Images
+                Image
               </span>
             </label>
             <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 transition-colors">
               <AudioWaveform className="w-5 h-5 text-yellow-300" />
               <input
                 type="file"
-                accept="audio/*"
+                accept=".mp3"
                 className="hidden"
                 onChange={handleFileUpload}
               />
