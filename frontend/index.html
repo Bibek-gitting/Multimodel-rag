@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multimodal RAG Chat</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>Multimodal RAG Assistant</h1>
+    </header>
+    <!-- Chat Main -->
+    <div class="chat-container">
+      <!-- Chat Side -->
+      <div class="sidebar">
+        <div class="chat-header">
+          <h2>Chats</h2>
+          <button id="new-chat">+</button>
+        </div>
+        <div class="chat-list">
+          <p><i>No chats yet. Start a new chat.</i></p>
+        </div>
+        <div class="upload-section">
+          <label for="doc" class="upload doc"
+            ><span> <i class="bi bi-file-earmark-pdf"></i> Pdf</span> </label
+          ><input type="file" hidden accept=".pdf,.doc,.docx" id="doc" />
+
+          <label for="img" class="upload img"
+            ><span> <i class="bi bi-image"></i> Img</span> </label
+          ><input type="file" hidden accept=".jpg,.png,.jpeg" id="img" />
+          <label for="aud" class="upload aud"
+            ><span>
+              <i class="bi bi-file-earmark-music"></i> Audio</span
+            > </label
+          ><input type="file" hidden accept=".mp3" id="aud" />
+        </div>
+      </div>
+
+      <!-- Chat Main -->
+      <div class="chat-main">
+        <div class="messages-header">
+          <p><i>Select or start a chat.</i></p>
+        </div>
+        <div class="messages-container">
+          <span
+            ><b>Select a chat or create a new one to start messaging.</b></span
+          >
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
