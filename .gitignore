@@ -1,6 +1,8 @@
 # Node modules folder (don't commit dependencies)
 models/
 
+node_modules/
+models/
 # Logs
 logs
 *.log
@@ -21,9 +23,16 @@ build/
 
 # Environment variables
 .env
+<<<<<<< HEAD
 .myvenv/
 .ocr_env/
 
 # Python cache directories
 __pycache__/
 **/__pycache__/
+=======
+
+
+codesandbox/
+devcontainer/
+>>>>>>> 54ae8ae9ba589115b7514afd06d6ce90aa47ace8
